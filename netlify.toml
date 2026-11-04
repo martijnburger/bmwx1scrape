@@ -1,0 +1,13 @@
+# Statische site: de webapp staat in web/ en leest data/listings.json.
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/"
+  to = "/web/"
+  status = 302
+
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

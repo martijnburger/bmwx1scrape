@@ -1,0 +1,71 @@
+{
+ "generated_at": "2026-11-04T08:23:13+00:00",
+ "cars": 2268,
+ "ads": 6464,
+ "sites": [
+  {
+   "site": "autoscout24",
+   "status": "ok",
+   "expected": 1793,
+   "collected": 1793,
+   "skipped": 0,
+   "requests": 117,
+   "seconds": 352,
+   "notes": [],
+   "scraped_at": "2026-11-04T08:19:24+00:00"
+  },
+  {
+   "site": "autotrack",
+   "status": "onvolledig",
+   "expected": 1083,
+   "collected": 930,
+   "requests": 171,
+   "seconds": 515,
+   "notes": [],
+   "scraped_at": "2026-11-04T08:04:52+00:00"
+  },
+  {
+   "site": "gaspedaal",
+   "status": "onvolledig",
+   "expected": 2059,
+   "collected": 1427,
+   "skipped": 0,
+   "options_missing": null,
+   "requests": 57,
+   "seconds": 172,
+   "notes": [],
+   "scraped_at": "2026-11-04T08:23:12+00:00"
+  },
+  {
+   "site": "marktplaats",
+   "status": "ok",
+   "expected": 1631,
+   "collected": 1509,
+   "skipped": 122,
+   "options_missing": null,
+   "requests": 55,
+   "seconds": 167,
+   "notes": [],
+   "scraped_at": "2026-11-04T08:23:08+00:00"
+  },
+  {
+   "site": "viabovag",
+   "status": "onvolledig",
+   "expected": 974,
+   "collected": 805,
+   "requests": 237,
+   "seconds": 736,
+   "notes": [
+    "viaBOVAG-filter /occasion/bouwjaar-vanaf-2021/bouwjaar-tot-en-met-2021/hybride/grijs/automatisch is niet verder te splitsen (circa 7 niet zichtbaar)",
+    "viaBOVAG-filter /occasion/bouwjaar-vanaf-2022/bouwjaar-tot-en-met-2022/hybride/zwart/automatisch is niet verder te splitsen (circa 11 niet zichtbaar)",
+    "viaBOVAG-filter /occasion/bouwjaar-vanaf-2022/bouwjaar-tot-en-met-2022/hybride/grijs/automatisch is niet verder te splitsen (circa 2 niet zichtbaar)",
+    "viaBOVAG-filter /occasion/bouwjaar-vanaf-2023/bouwjaar-tot-en-met-2023/hybride/zwart/automatisch is niet verder te splitsen (circa 6 niet zichtbaar)",
+    "viaBOVAG-filter /occasion/bouwjaar-vanaf-2025/bouwjaar-tot-en-met-2025/hybride/zwart/automatisch is niet verder te splitsen (circa 30 niet zichtbaar)",
+    "viaBOVAG-filter /occasion/bouwjaar-vanaf-2025/bouwjaar-tot-en-met-2025/hybride/grijs/automatisch is niet verder te splitsen (circa 5 niet zichtbaar)",
+    "viaBOVAG-filter /occasion/bouwjaar-vanaf-2026/bouwjaar-tot-en-met-2026/hybride/zwart/automatisch is niet verder te splitsen (circa 60 niet zichtbaar)",
+    "viaBOVAG-filter /occasion/bouwjaar-vanaf-2026/bouwjaar-tot-en-met-2026/hybride/grijs/automatisch is niet verder te splitsen (circa 43 niet zichtbaar)"
+   ],
+   "scraped_at": "2026-11-04T07:56:17+00:00"
+  }
+ ]
+}

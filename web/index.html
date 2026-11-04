@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BMW X1 marktoverzicht</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>BMW X1 marktoverzicht</h1>
+      <p id="dataInfo" class="muted">Gegevens laden…</p>
+    </div>
+    <div class="topbar-actions">
+      <button id="toggleFilters" class="btn filters-toggle" type="button" aria-expanded="false" aria-controls="filters">Filters</button>
+      <label class="btn">JSON openen<input id="fileInput" type="file" accept=".json,application/json" hidden></label>
+      <button id="exportBtn" class="btn" type="button">Selectie exporteren</button>
+    </div>
+  </header>
+
+  <details id="sourcesPanel" class="sources" hidden>
+    <summary>Databronnen en dekking</summary>
+    <div id="sourcesBody"></div>
+  </details>
+
+  <div id="loadError" class="notice" hidden></div>
+
+  <div class="layout">
+    <aside id="filters" class="filters" aria-label="Filters">
+      <div class="filters-head">
+        <h2>Filters</h2>
+        <button id="resetBtn" class="linkbtn" type="button">Alles wissen</button>
+      </div>
+      <label class="field">
+        <span>Zoeken</span>
+        <input id="search" type="search" placeholder="Titel, plaats, verkoper, kenteken…">
+      </label>
+      <div id="rangeFilters"></div>
+      <div id="facetFilters"></div>
+    </aside>
+
+    <main class="content">
+      <section id="tiles" class="tiles" aria-label="Kerncijfers"></section>
+      <div id="chips" class="chips"></div>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Doorsnijding</h2>
+          <div class="controls">
+            <label>Rij <select id="pivotRow"></select></label>
+            <label>Kolom <select id="pivotCol"></select></label>
+            <label>Waarde <select id="pivotMetric"></select></label>
+          </div>
+        </div>
+        <p class="hint">Klik op een rij of cel om daarop te filteren.</p>
+        <div id="pivot"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2 id="scatterTitle">Prijs tegenover kilometerstand</h2>
+          <div class="controls">
+            <label>Horizontaal <select id="scatterX"></select></label>
+            <label>Kleur <select id="scatterColor"></select></label>
+          </div>
+        </div>
+        <div id="scatterLegend" class="legend"></div>
+        <div id="scatter" class="scatter"></div>
+        <div id="tooltip" class="tooltip" hidden></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2 id="resultsTitle">Auto's</h2>
+          <div id="pager" class="pager"></div>
+        </div>
+        <div class="table-wrap"><table id="results"></table></div>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.DS_Store
+.netlify/
+data/raw/
+data/cache/
+data/*.log
