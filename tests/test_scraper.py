@@ -1,9 +1,14 @@
+import contextlib
+import io
 import json
 import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
+from urllib.parse import parse_qs, urlsplit
+
+from scraper.__main__ import Run
 from scraper.details import EMPTY_LIMIT, enrich
 
 from scraper.features import detect_features
@@ -68,6 +73,9 @@ class NormalisationTest(unittest.TestCase):
     def test_e_variant_labelled_as_petrol_is_plugin(self):
         listing = make_listing("x", 1, "u", title="BMW X1 xDrive25e", fuel="Benzine")
         self.assertEqual(listing["fuel"], "Plug-in hybride")
+
+    def test_repeated_model_in_title_is_removed(self):
+        self.assertEqual(make_listing("x", 1, "u", title="BMW X1 X1 sDrive18i")["title"], "BMW X1 sDrive18i")
 
     def test_placeholders_are_cleared(self):
         listing = make_listing("x", 1, "u", seller_name="Onbekende dealer", power_hp=0)
@@ -191,6 +199,33 @@ class FeaturesTest(unittest.TestCase):
     def test_m_sport_comes_from_text_even_with_list(self):
         self.assertEqual(detect_features(["Radio"], ["BMW X1 M-Sport"])[0], ["M Sport"])
 
+    def test_autoscout24_vocabulary(self):
+        found, _ = detect_features(["360°-camera", "Panorama dak", "Keyless Entry"], [])
+        for name in ("360° camera", "Achteruitrijcamera", "Panorama-/schuifdak", "Keyless entry"):
+            self.assertIn(name, found)
+        self.assertNotIn("Panorama-/schuifdak", detect_features(["Schuifdeur links"], [])[0])
+        self.assertNotIn("Leder", detect_features(["Lederen stuurwiel"], [])[0])
+
+    def test_autotrack_vocabulary(self):
+        found, _ = detect_features(["Cruise Control Adaptive", "Achterklep elektrisch bedienbaar", "Rondomzicht camera",
+                                    "Stoel(en) elektrisch verstelbare", "stuurwiel multifunctioneel en verwarmd",
+                                    "Koplampen adaptief"], [])
+        for name in ("Adaptive cruise control", "Elektrische achterklep", "360° camera", "Achteruitrijcamera",
+                     "Elektrische stoelen", "Stuurwielverwarming", "Adaptieve/laser-koplampen"):
+            self.assertIn(name, found)
+
+    def test_autotrack_false_positives(self):
+        found, _ = detect_features(["Versnellingspook leer", "Stuurwiel leer", "kunstlederen bekleding", "keyless start",
+                                    "Cruise control", "achterklep", "Stuurwiel multifunctioneel"], [])
+        self.assertEqual(found, [])
+
+    def test_match_does_not_span_two_options(self):
+        found, _ = detect_features(["Stuurwiel leer", "Buitenspiegels verwarmd"], [])
+        self.assertNotIn("Stuurwielverwarming", found)
+
+    def test_audio_brand_comes_from_text_even_with_list(self):
+        self.assertEqual(detect_features(["Radio"], ["BMW X1 Harman Kardon"])[0], ["Harman Kardon/soundsysteem"])
+
     def test_title_abbreviations(self):
         found, _ = detect_features([], ["BMW X1 | HuD | Afn.Trekhaak | Elek.A-klep | Active Cruise Control"])
         for name in ("Head-up display", "Trekhaak", "Elektrische achterklep", "Adaptive cruise control"):
@@ -217,6 +252,76 @@ class DetailParsingTest(unittest.TestCase):
     def test_viabovag_keeps_only_present_values(self):
         payload = 'x,"accessories":[{"value":"a","hasValue":true,"formattedValue":"Panoramadak"},{"value":"b","hasValue":false,"formattedValue":"Radio"}],"y":1'
         self.assertEqual(viabovag.parse_detail(flight_page(payload)), ["Panoramadak"])
+
+
+def next_page(props):
+    return f'<script id="__NEXT_DATA__" type="application/json">{json.dumps({"props": {"pageProps": props}})}</script>'
+
+
+class AutoScout24DetailTest(unittest.TestCase):
+    TAXONOMY = {"equipment": [{"label": "Trekhaak", "value": 1}, {"label": "Schuifdeur", "value": 2},
+                              {"label": "Head-up display", "value": 3}]}
+
+    def parse(self, equipment, **extra):
+        return autoscout24.parse_detail(next_page({
+            "taxonomy": self.TAXONOMY, "listingDetails": {"vehicle": {"equipment": equipment}}, **extra}))
+
+    def test_shapes(self):
+        self.assertEqual(self.parse(["Trekhaak", "Radio"]), ["Trekhaak", "Radio"])
+        self.assertEqual(self.parse([{"id": 1, "text": "Trekhaak"}]), ["Trekhaak"])
+        self.assertEqual(self.parse([{"id": {"raw": 1, "formatted": "Trekhaak"}}]), ["Trekhaak"])
+        self.assertEqual(self.parse({"comfort": [{"name": "Trekhaak"}], "media": ["Radio"]}), ["Trekhaak", "Radio"])
+
+    def test_ids_are_translated_with_vocabulary(self):
+        self.assertEqual(self.parse([1, 3, 99]), ["Trekhaak", "Head-up display"])
+        self.assertEqual(self.parse([{"id": 1}]), ["Trekhaak"])
+
+    def test_vocabulary_is_never_read_as_options(self):
+        page = next_page({"taxonomy": self.TAXONOMY, "listingDetails": {"vehicle": {"make": "BMW"}}})
+        self.assertEqual(autoscout24.parse_detail(page), [])
+        self.assertEqual(autoscout24.parse_detail(next_page({"taxonomy": self.TAXONOMY})), [])
+
+    def test_implausibly_long_list_is_rejected(self):
+        self.assertEqual(self.parse([f"optie {i}" for i in range(autoscout24.MAX_OPTIONS + 1)]), [])
+
+    def test_html_without_data(self):
+        self.assertEqual(autoscout24.parse_detail("<html></html>"), [])
+
+
+class FakeAutoScout24:
+    """Bootst de zoekfunctie na: gesorteerd op prijs en maximaal 20 pagina's per zoekopdracht."""
+    PAGE = 19
+
+    def __init__(self, prices):
+        self.cars = sorted(({"id": f"c{i}", "url": f"/a/{i}", "price": {"priceRaw": price},
+                             "vehicle": {"model": "X1", "offerType": "U"}, "tracking": {}, "seller": {"type": "Dealer"}}
+                            for i, price in enumerate(prices)), key=lambda c: c["price"]["priceRaw"])
+
+    def get(self, url):
+        query = parse_qs(urlsplit(url).query)
+        low, high = int(query["pricefrom"][0]), int(query["priceto"][0])
+        page = int(query.get("page", ["1"])[0])
+        hits = [c for c in self.cars if low <= c["price"]["priceRaw"] <= high]
+        shown = hits[(page - 1) * self.PAGE:page * self.PAGE] if page <= 20 else []
+        # Een pagina kan dezelfde auto twee keer tonen (gesponsorde plek).
+        return SimpleNamespace(text=next_page({"listings": shown + shown[:1], "numberOfResults": len(hits),
+                                               "numberOfPages": -(-len(hits) // self.PAGE)}))
+
+
+class AutoScout24CrawlTest(unittest.TestCase):
+    def test_price_splitting_reaches_every_car_despite_page_limit(self):
+        prices = [3000 + (i * 47) % 87000 for i in range(1792)]
+        run = Run("autoscout24")
+        with contextlib.redirect_stdout(io.StringIO()):
+            autoscout24._crawl_range(FakeAutoScout24(prices), run, 0, autoscout24.PRICE_MAX)
+        self.assertEqual(run.count, 1792)
+
+    def test_new_count_ignores_duplicates_on_one_page(self):
+        run, output = Run("x"), io.StringIO()
+        item = {"source_id": "a"}
+        with contextlib.redirect_stdout(output):
+            run.add_all([item, item, {"source_id": "b"}])
+        self.assertIn("+2 nieuw, totaal 2", output.getvalue())
 
 
 class FakeFetcher:

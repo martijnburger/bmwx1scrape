@@ -69,9 +69,11 @@ betekent niet dat je ze zonder meer mag hergebruiken; controleer daarvoor de voo
 
 - **Dekking:** sites tonen niet alles via toegestane routes. Bekijk "Databronnen en dekking" in de
   webapp of `data/report.json`.
-- **Opties** (`features`): komen uit de optielijsten van Marktplaats, AutoTrack en viaBOVAG. Alleen als
-  een auto op geen van die sites een lijst heeft, is de titel het laatste redmiddel (`features_source`).
-  Verkopers vullen lijsten zelf in, dus "niet gevonden" betekent niet dat de optie ontbreekt.
+- **Opties** (`features`): komen uit de optielijsten van Marktplaats, AutoTrack, viaBOVAG en AutoScout24.
+  Stopt een run met "parser is waarschijnlijk verouderd", dan is de paginastructuur van die site
+  veranderd. Alleen als een auto op geen van die sites een lijst heeft, is de titel het laatste redmiddel (`features_source`).
+  M Sport en het audiomerk mogen altijd uit de tekst komen, omdat optielijsten daar meestal geen plek
+  voor hebben. Verkopers vullen lijsten zelf in, dus "niet gevonden" betekent niet dat de optie ontbreekt.
 - **Generatie** is afgeleid uit het bouwjaar. Rond de wisseljaren 2015 en 2022 kan dat afwijken.
 - **Gaspedaal** geeft geen directe advertentielink in de toegestane data; de link gaat naar het
   X1-overzicht.

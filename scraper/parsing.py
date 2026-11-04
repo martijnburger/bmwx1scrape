@@ -179,6 +179,9 @@ def apply_rules(listing: dict) -> None:
     # Prijzen als € 1 zijn lokkertjes of "bel voor prijs", geen vraagprijs.
     if listing.get("price_eur") is not None and listing["price_eur"] < MIN_REAL_PRICE:
         listing["price_eur"] = None
+    # AutoScout24 herhaalt het model in de uitvoering: "BMW X1 X1 sDrive18i".
+    if listing.get("title"):
+        listing["title"] = re.sub(r"^BMW X1 X1\b", "BMW X1", listing["title"])
     # Plaatshouders van sites zijn geen gegevens.
     if (listing.get("seller_name") or "").lower() == "onbekende dealer":
         listing["seller_name"] = None

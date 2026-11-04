@@ -32,9 +32,10 @@ class Run:
         return len(self.listings)
 
     def add_all(self, items: list[dict]) -> None:
-        new = sum(1 for i in items if i["source_id"] not in self.listings)
+        before = self.count
         for item in items:
             self.listings[item["source_id"]] = item
+        new = self.count - before
         total = f"/{self.expected}" if self.expected else ""
         print(f"  [{self.site}] +{new} nieuw, totaal {self.count}{total}", flush=True)
 

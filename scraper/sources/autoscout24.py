@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from ..details import enrich
 from ..parsing import (clean_text, make_listing, next_data, norm_body, norm_fuel, norm_plate,
                        norm_transmission, power_from_text, to_int)
 
@@ -12,6 +13,9 @@ SEARCH = f"{ORIGIN}/lst/bmw/x1?atype=C&cy=NL&ustate=U&sort=price&desc=0"
 MAX_PAGES = 20
 PAGE_SIZE = 19
 PRICE_MAX = 150_000
+LABEL_KEYS = ("formatted", "label", "text", "name", "displayName", "value", "id")
+# Meer dan dit kan geen auto hebben (de site kent 136 opties): dan is het de woordenlijst.
+MAX_OPTIONS = 100
 
 
 def parse_listing(raw: dict) -> dict | None:
@@ -54,6 +58,56 @@ def parse_page(html: str) -> tuple[list[dict], int | None, int | None]:
     return [i for i in items if i], props.get("numberOfResults"), props.get("numberOfPages")
 
 
+def _find_equipment(node):
+    if isinstance(node, dict):
+        if node.get("equipment"):
+            return node["equipment"]
+        children = node.values()
+    elif isinstance(node, list):
+        children = node
+    else:
+        return None
+    for child in children:
+        found = _find_equipment(child)
+        if found:
+            return found
+    return None
+
+
+def _labels(node, vocabulary: dict) -> list[str]:
+    """Vangt de vormen op die opties kunnen hebben: tekst, id, object, of groepen per categorie."""
+    if isinstance(node, str):
+        return [node] if not node.isdigit() else _labels(int(node), vocabulary)
+    if isinstance(node, bool):
+        return []
+    if isinstance(node, int):
+        return [vocabulary[node]] if node in vocabulary else []
+    if isinstance(node, list):
+        return [label for child in node for label in _labels(child, vocabulary)]
+    if isinstance(node, dict):
+        for key in LABEL_KEYS:
+            if key in node and not isinstance(node[key], (dict, list)):
+                found = _labels(node[key], vocabulary)
+                if found:
+                    return found
+        return [label for child in node.values() if isinstance(child, (dict, list))
+                for label in _labels(child, vocabulary)]
+    return []
+
+
+def parse_detail(html: str) -> list[str]:
+    """Opties van één advertentie. Leest bewust alleen uit listingDetails: pageProps.taxonomy.equipment
+    is de woordenlijst met álle opties, waardoor elke auto anders alles zou hebben."""
+    props = next_data(html) or {}
+    equipment = _find_equipment(props.get("listingDetails"))
+    if not equipment:
+        return []
+    taxonomy = props.get("taxonomy") if isinstance(props.get("taxonomy"), dict) else {}
+    vocabulary = {e.get("value"): e.get("label") for e in taxonomy.get("equipment") or [] if isinstance(e, dict)}
+    options = list(dict.fromkeys(_labels(equipment, vocabulary)))
+    return options if len(options) <= MAX_OPTIONS else []
+
+
 def _crawl_range(fetcher, run, low: int, high: int) -> None:
     query = f"{SEARCH}&pricefrom={low}&priceto={high}"
     page = fetcher.get(query)
@@ -65,6 +119,8 @@ def _crawl_range(fetcher, run, low: int, high: int) -> None:
     # Te veel voor de paginalimiet: halveer de prijsrange en probeer opnieuw.
     if total > MAX_PAGES * PAGE_SIZE and high - low > 100:
         middle = (low + high) // 2
+        print(f"  [{run.site}] € {low}-{high}: {total} auto's is te veel voor {MAX_PAGES} pagina's, "
+              f"prijsklasse wordt gesplitst (de goedkoopste auto's komen dan even terug als +0)", flush=True)
         _crawl_range(fetcher, run, low, middle)
         _crawl_range(fetcher, run, middle + 1, high)
         return
@@ -87,3 +143,4 @@ def crawl(fetcher, run) -> None:
     run.expected = total
     run.add_all(items)
     _crawl_range(fetcher, run, 0, PRICE_MAX)
+    enrich(fetcher, run, parse_detail)
