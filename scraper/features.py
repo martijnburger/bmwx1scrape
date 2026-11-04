@@ -6,13 +6,13 @@ import re
 FEATURES = {
     "Achteruitrijcamera": r"achteruitrijcamera|parkeercamera|\bcamera\b|parking assist\w* plus",
     "360° camera": r"360\s?°?[\s-]?camera|rondomzicht|surround view|parking assist\w* plus",
-    "Adaptive cruise control": r"ada?ptie?ve? cruise|cruise control adaptive|active cruise|\bacc\b|driving assist\w* (?:plus|prof)",
+    "Adaptive cruise control": r"ada?ptie?ve? cruise|cruise control adaptive|active cruise|\bacc\b(?!-ready)|(?<!voorbereiding )driving assist\w* (?:plus|prof)",
     "Head-up display": r"head[\s-]?up|\bhud\b",
     "Panorama-/schuifdak": r"\bpano|schuif(?!deur)|open dak|dakraam",
     "Trekhaak": r"trekhaak",
     "Leder": r"\bleder(?:en)?\b(?!\s*(?:stuur|pook))|(?<!stuurwiel )(?<!versnellingspook )\bleer\b",
     "Elektrische stoelen": r"elek\w*\.?\s*(?:voor)?stoel|stoelverstelling|stoel\(en\) elektrisch|\bmemory\b",
-    "Stoelverwarming": r"stoelverwarming",
+    "Stoelverwarming": r"stoel\s?verwarming",
     "Stuurwielverwarming": r"stuur(?:wiel)?verwarming|stuurwiel\b[^|]*?\bverwarmd",
     "Elektrische achterklep": r"elek\w*\.?[\s-]*(?:a-klep|achterklep|klep)|achterklep elektrisch",
     "Keyless entry": r"keyless(?! start)|comfort access",
@@ -28,21 +28,14 @@ _COMPILED = {name: re.compile(pattern, re.I) for name, pattern in FEATURES.items
 _NEGATION = re.compile(r"\b(?:geen|zonder)\s+\S+", re.I)
 
 
-# Uitvoeringslijn en audiomerk hebben op de meeste sites geen eigen plek in de optielijst. Dat ze
-# daar ontbreken zegt dus niets; deze twee mogen altijd ook uit de advertentietekst komen.
-_FROM_TEXT_ALWAYS = {"M Sport", "Harman Kardon/soundsysteem"}
-
-
-def _detect(texts: list[str], names) -> list[str]:
+def _detect(texts: list[str]) -> set[str]:
     text = _NEGATION.sub(" ", " | ".join(texts))
-    return [name for name in names if _COMPILED[name].search(text)]
+    return {name for name, pattern in _COMPILED.items() if pattern.search(text)}
 
 
-def detect_features(options: list[str], titles: list[str]) -> tuple[list[str], str | None]:
-    """Geeft (opties, herkomst). De titel is alleen het laatste redmiddel: is er een optielijst,
-    dan telt die, ook als de titel meer belooft."""
-    if options:
-        found = set(_detect(options, FEATURES)) | set(_detect(titles, _FROM_TEXT_ALWAYS))
-        return [n for n in FEATURES if n in found], "optielijst"
-    found = _detect(titles, FEATURES)
-    return found, "titel" if found else None
+def detect_features(options: list[str], titles: list[str]) -> tuple[list[str], list[str]]:
+    """Geeft (alle opties, opties die alleen uit de titel komen). De optielijst is de eerste bron;
+    wat daar niet in staat maar wel in de titel, telt ook mee."""
+    from_list, from_title = _detect(options), _detect(titles)
+    found = from_list | from_title
+    return [n for n in FEATURES if n in found], [n for n in FEATURES if n in from_title - from_list]

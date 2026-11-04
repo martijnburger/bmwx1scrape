@@ -76,7 +76,7 @@ def merge_listings(listings: list[dict]) -> list[dict]:
         for field in SHARED_FIELDS:
             car[field] = next((l[field] for l in group if l.get(field) not in (None, "")), None)
         car["options"] = list(dict.fromkeys(o for l in group for o in l.get("options") or []))
-        car["features"], car["features_source"] = detect_features(car["options"], [l["title"] for l in group if l.get("title")])
+        car["features"], car["features_from_title"] = detect_features(car["options"], [l["title"] for l in group if l.get("title")])
         prices = [l["price_eur"] for l in group if l.get("price_eur")]
         car["price_eur"] = min(prices) if prices else None
         car["sources"] = [{"site": l["source"], "url": l["url"], "price_eur": l.get("price_eur"),

@@ -183,21 +183,19 @@ def ad(source, source_id, **fields):
 
 class FeaturesTest(unittest.TestCase):
     def test_labels_of_all_sites(self):
-        found, source = detect_features(["Adaptive Cruise Control", "Parkeercamera", "Head-up Display", "Dakraam",
+        found, from_title = detect_features(["Adaptive Cruise Control", "Parkeercamera", "Head-up Display", "Dakraam",
                                          "Trekhaak met afneembare kogel", "Elektrische achterklep"], [])
-        self.assertEqual(source, "optielijst")
+        self.assertEqual(from_title, [])
         for name in ("Adaptive cruise control", "Achteruitrijcamera", "Head-up display", "Panorama-/schuifdak",
                      "Trekhaak", "Elektrische achterklep"):
             self.assertIn(name, found)
 
-    def test_title_is_used_only_without_any_list(self):
-        self.assertEqual(detect_features([], ["BMW X1 Pano | ACC"]),
-                         (["Adaptive cruise control", "Panorama-/schuifdak"], "titel"))
-        self.assertEqual(detect_features(["Radio"], ["BMW X1 Pano | ACC"]), ([], "optielijst"))
-        self.assertEqual(detect_features([], ["BMW X1"]), ([], None))
-
-    def test_m_sport_comes_from_text_even_with_list(self):
-        self.assertEqual(detect_features(["Radio"], ["BMW X1 M-Sport"])[0], ["M Sport"])
+    def test_list_comes_first_and_title_adds_what_is_missing(self):
+        self.assertEqual(detect_features(["Trekhaak"], ["BMW X1 Pano | Trekhaak"]),
+                         (["Panorama-/schuifdak", "Trekhaak"], ["Panorama-/schuifdak"]))
+        self.assertEqual(detect_features([], ["BMW X1 ACC"]), (["Adaptive cruise control"], ["Adaptive cruise control"]))
+        self.assertEqual(detect_features(["Trekhaak"], ["BMW X1"]), (["Trekhaak"], []))
+        self.assertEqual(detect_features([], ["BMW X1"]), ([], []))
 
     def test_autoscout24_vocabulary(self):
         found, _ = detect_features(["360°-camera", "Panorama dak", "Keyless Entry"], [])
@@ -223,8 +221,10 @@ class FeaturesTest(unittest.TestCase):
         found, _ = detect_features(["Stuurwiel leer", "Buitenspiegels verwarmd"], [])
         self.assertNotIn("Stuurwielverwarming", found)
 
-    def test_audio_brand_comes_from_text_even_with_list(self):
-        self.assertEqual(detect_features(["Radio"], ["BMW X1 Harman Kardon"])[0], ["Harman Kardon/soundsysteem"])
+    def test_prepared_is_not_the_same_as_present(self):
+        for title in ("BMW X1 ACC-ready", "BMW X1 Voorbereiding Driving Assistant Plus"):
+            self.assertNotIn("Adaptive cruise control", detect_features([], [title])[0])
+        self.assertIn("Adaptive cruise control", detect_features([], ["BMW X1 Driving Assistant Plus"])[0])
 
     def test_title_abbreviations(self):
         found, _ = detect_features([], ["BMW X1 | HuD | Afn.Trekhaak | Elek.A-klep | Active Cruise Control"])
@@ -449,9 +449,8 @@ class MergeTest(unittest.TestCase):
             ad("autotrack", 2, license_plate="AB123C", title="BMW X1 sDrive18i Pano"),
             ad("marktplaats", 3, license_plate="AB123C", title="BMW X1", options=["Adaptive Cruise Control"]),
         ])
-        # De lijst van Marktplaats telt; "Pano" uit de titel van AutoTrack dus niet.
-        self.assertEqual(cars[0]["features"], ["Adaptive cruise control"])
-        self.assertEqual(cars[0]["features_source"], "optielijst")
+        self.assertEqual(cars[0]["features"], ["Adaptive cruise control", "Panorama-/schuifdak"])
+        self.assertEqual(cars[0]["features_from_title"], ["Panorama-/schuifdak"])
 
     def test_options_of_all_sites_are_combined(self):
         cars = merge_listings([

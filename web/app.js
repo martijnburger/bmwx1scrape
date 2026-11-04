@@ -228,7 +228,8 @@ function renderFacets() {
 function optionCoverageText() {
   const withList = state.cars.filter((c) => c.options?.length).length;
   const without = state.cars.length - withList;
-  return without ? `Van ${numberFormat.format(without)} auto's is geen optielijst bekend; die worden alleen op de advertentietitel herkend en kunnen dus ten onrechte ontbreken.` : "";
+  const note = "Opties komen uit de optielijst en de advertentietitel.";
+  return without ? `${note} Van ${numberFormat.format(without)} auto's is geen optielijst bekend, dus daar kan een optie ten onrechte ontbreken.` : note;
 }
 
 function renderChips() {
@@ -556,7 +557,8 @@ function renderTable(cars) {
 
   const rows = visible.map((car) => {
     const meta = [car.variant, car.trim, car.color, car.license_plate].filter(Boolean).join(" · ");
-    const features = (car.features || []).join(", ") + (car.features_source === "titel" ? " (uit titel)" : "");
+    const fromTitle = new Set(car.features_from_title || []);
+    const features = (car.features || []).map((f) => (fromTitle.has(f) ? `${f} (uit titel)` : f)).join(", ");
     const image = car.image_url
       ? `<img class="thumb" loading="lazy" referrerpolicy="no-referrer" alt="" src="${esc(safeUrl(car.image_url))}">`
       : `<div class="thumb"></div>`;
