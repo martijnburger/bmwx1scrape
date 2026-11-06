@@ -1,21 +1,19 @@
 {
- "generated_at": "2026-11-04T12:01:02+00:00",
- "cars": 2267,
- "ads": 6465,
+ "generated_at": "2026-11-06T06:44:50+00:00",
+ "cars": 2273,
+ "ads": 6451,
  "sites": [
   {
    "site": "autoscout24",
    "status": "ok",
-   "expected": 1792,
-   "collected": 1792,
+   "expected": 1784,
+   "collected": 1784,
    "skipped": 0,
-   "options_missing": 15,
-   "requests": 1910,
-   "seconds": 5746,
-   "notes": [
-    "2 advertentiepagina's niet beschikbaar"
-   ],
-   "scraped_at": "2026-11-04T10:32:02+00:00"
+   "options_missing": 13,
+   "requests": 155,
+   "seconds": 466,
+   "notes": [],
+   "scraped_at": "2026-11-06T06:44:49+00:00"
   },
   {
    "site": "autotrack",
@@ -32,26 +30,26 @@
   {
    "site": "gaspedaal",
    "status": "onvolledig",
-   "expected": 2059,
+   "expected": 2060,
    "collected": 1427,
    "skipped": 0,
    "options_missing": null,
    "requests": 57,
    "seconds": 172,
    "notes": [],
-   "scraped_at": "2026-11-04T08:23:12+00:00"
+   "scraped_at": "2026-11-06T06:31:36+00:00"
   },
   {
    "site": "marktplaats",
    "status": "ok",
-   "expected": 1631,
-   "collected": 1509,
-   "skipped": 122,
+   "expected": 1624,
+   "collected": 1503,
+   "skipped": 121,
    "options_missing": null,
    "requests": 55,
-   "seconds": 167,
+   "seconds": 166,
    "notes": [],
-   "scraped_at": "2026-11-04T08:23:08+00:00"
+   "scraped_at": "2026-11-06T00:12:39+00:00"
   },
   {
    "site": "viabovag",
